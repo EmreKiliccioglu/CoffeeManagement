@@ -18,5 +18,7 @@ public interface IUserService {
 	void deleteUserById(Long id);
 	
 	List<UserResponseDto> getActiveUsers();
+	
+	List<UserResponseDto> searchByName(String name);
 
 }

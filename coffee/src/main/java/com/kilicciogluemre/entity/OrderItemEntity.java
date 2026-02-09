@@ -1,5 +1,7 @@
 package com.kilicciogluemre.entity;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,33 +18,44 @@ public class OrderItemEntity extends BaseEntity {
     private OrderEntity order;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private ProductEntity product;
+    @JoinColumn(name = "store_product_id", nullable = true)
+    private StoreProductEntity storeProduct;
 
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(nullable = false)
+    private BigDecimal priceAtOrderTime;
+
     public OrderEntity getOrder() {
         return order;
     }
- 
+
     public void setOrder(OrderEntity order) {
         this.order = order;
     }
- 
-    public ProductEntity getProduct() {
-        return product;
+
+    public StoreProductEntity getStoreProduct() {
+        return storeProduct;
     }
- 
-    public void setProduct(ProductEntity product) {
-        this.product = product;
+
+    public void setStoreProduct(StoreProductEntity storeProduct) {
+        this.storeProduct = storeProduct;
     }
- 
+
     public Integer getQuantity() {
         return quantity;
     }
- 
+
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public BigDecimal getPriceAtOrderTime() {
+        return priceAtOrderTime;
+    }
+
+    public void setPriceAtOrderTime(BigDecimal priceAtOrderTime) {
+        this.priceAtOrderTime = priceAtOrderTime;
     }
 }

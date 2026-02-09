@@ -1,12 +1,10 @@
 package com.kilicciogluemre.entity;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -16,12 +14,8 @@ public class ProductEntity extends BaseEntity{
 	@Column(nullable = false)
     private String name;
 
-    @Column(nullable = false)
-    private BigDecimal price;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "store_id", nullable = false)
-    private StoreEntity store;
+	@OneToMany(mappedBy = "product")
+	private List<StoreProductEntity> storeProducts;
 
     @Column(nullable = false)
     private Boolean active = true;
@@ -32,22 +26,6 @@ public class ProductEntity extends BaseEntity{
  
     public void setName(String name) {
         this.name = name;
-    }
- 
-    public BigDecimal getPrice() {
-        return price;
-    }
- 
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
- 
-    public StoreEntity getStore() {
-        return store;
-    }
- 
-    public void setStore(StoreEntity store) {
-        this.store = store;
     }
  
     public Boolean getActive() {

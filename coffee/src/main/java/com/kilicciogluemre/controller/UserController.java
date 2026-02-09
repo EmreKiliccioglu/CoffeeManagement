@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kilicciogluemre.Dto.Request.UserRequestDto;
@@ -61,6 +62,12 @@ public class UserController {
 	@GetMapping("/list/active")
 	public ResponseEntity<List<UserResponseDto>> getActiveUsers(){
 		List<UserResponseDto> users = userService.getActiveUsers();
+		return ResponseEntity.ok(users);
+	}
+	
+	@GetMapping("/search")
+	public ResponseEntity<List<UserResponseDto>> searchUsersByName(@RequestParam String name){
+		List<UserResponseDto> users = userService.searchByName(name);
 		return ResponseEntity.ok(users);
 	}
 	

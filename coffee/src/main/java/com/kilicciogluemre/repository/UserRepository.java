@@ -10,4 +10,6 @@ import com.kilicciogluemre.entity.UserEntity;
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, Long> {
 	List<UserEntity> findByDeletedFalseAndActiveTrue();
+	List<UserEntity> findByNameContainingIgnoreCase(String name);
+
 }

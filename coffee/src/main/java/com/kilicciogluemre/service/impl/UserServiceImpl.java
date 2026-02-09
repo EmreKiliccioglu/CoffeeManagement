@@ -136,4 +136,21 @@ public class UserServiceImpl implements IUserService {
 			return dto;
 		}).toList();		
 	}
+
+	@Override
+	public List<UserResponseDto> searchByName(String name) {
+		
+		List<UserEntity> users = userRepository
+				.findByNameContainingIgnoreCase(name);
+		return users.stream().map(user -> {
+		UserResponseDto dto = new UserResponseDto();
+		dto.setId(user.getId());
+		dto.setName(user.getName());
+		dto.setEmail(user.getEmail());
+		dto.setRole(user.getRole());
+		dto.setActive(user.getActive());
+		return dto;
+		
+		}).toList();
+	}
 }
