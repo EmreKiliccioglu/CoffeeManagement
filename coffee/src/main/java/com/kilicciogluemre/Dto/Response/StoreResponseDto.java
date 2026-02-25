@@ -1,5 +1,8 @@
 package com.kilicciogluemre.Dto.Response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class StoreResponseDto {
 
 	private Long id;

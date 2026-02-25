@@ -3,7 +3,13 @@ package com.kilicciogluemre.service.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.kilicciogluemre.GlobalException.GlobalExceptionHandler;
+import com.kilicciogluemre.GlobalException.ResourceNotFoundException;
+import com.kilicciogluemre.Mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.kilicciogluemre.Dto.Request.UserRequestDto;
@@ -19,138 +25,77 @@ public class UserServiceImpl implements IUserService {
 	@Autowired
 	private UserRepository userRepository;
 
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+
+	@Autowired
+	private UserMapper userMapper;
+
 	@Override
 	public UserResponseDto createUser(UserRequestDto userRequestDto) {
+		UserEntity user = userMapper.toEntity(userRequestDto);
 
-		UserEntity user = new UserEntity();
+		user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-		user.setName(userRequestDto.getName());
-		user.setEmail(userRequestDto.getEmail());
-		user.setPassword(userRequestDto.getPassword());
-
-		user.setRole(Role.USER);
+		if(userRequestDto.getRole() != null) {
+			user.setRole(userRequestDto.getRole());
+		} else {
+			user.setRole(Role.USER);
+		}
 		user.setActive(true);
 		user.setDeleted(false);
 
 		UserEntity savedUser = userRepository.save(user);
-
-		UserResponseDto response = new UserResponseDto();
-
-		response.setId(savedUser.getId());
-		response.setName(savedUser.getName());
-		response.setEmail(savedUser.getEmail());
-		response.setRole(savedUser.getRole());
-		response.setActive(savedUser.getActive());
-
-		return response;
+		return userMapper.toDto(savedUser);
 	}
 
 	@Override
-	public List<UserResponseDto> getAllUsers() {
-		List<UserEntity> users = userRepository.findAll();
-
-		return users.stream().map(user -> {
-			UserResponseDto responseDto = new UserResponseDto();
-			responseDto.setId(user.getId());
-			responseDto.setName(user.getName());
-			responseDto.setEmail(user.getEmail());
-			responseDto.setRole(user.getRole());
-			responseDto.setActive(user.getActive());
-			
-			return responseDto;
-
-		}).collect(Collectors.toList());
+	public Page<UserResponseDto> getAllUsers(Pageable pageable) {
+		Page<UserEntity> usersPage = userRepository.findAll(pageable);
+		return usersPage.map(userMapper::toDto);
 	}
 
 	@Override
 	public UserResponseDto getUserById(Long id) {
 		UserEntity user = userRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("User Not Found With ID : " + id));
+				.orElseThrow(() -> new ResourceNotFoundException("User Not Found With ID : " + id));
 
-		UserResponseDto responseDto = new UserResponseDto();
-		responseDto.setId(user.getId());
-		responseDto.setName(user.getName());
-		responseDto.setEmail(user.getEmail());
-		responseDto.setRole(user.getRole());
-		responseDto.setActive(user.getActive());
-		
-		return responseDto;
+		return userMapper.toDto(user);
 	}
 
 	@Override
 	public UserResponseDto updateUser(Long id, UserRequestDto userRequestDto) {
 		UserEntity user = userRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("User Not Found With ID :" + id));
+				.orElseThrow(() -> new ResourceNotFoundException("User Not Found With ID :" + id));
 
-		if (userRequestDto.getName() != null) {
-			user.setName(userRequestDto.getName());
-		}
-		if (userRequestDto.getEmail() != null) {
-			user.setEmail(userRequestDto.getEmail());
-		}
-		if (userRequestDto.getPassword() != null) {
-			user.setPassword(userRequestDto.getPassword());
-		}
+		userMapper.updateEntityFromDto(userRequestDto, user);
 
 		UserEntity updatedUser = userRepository.save(user);
 
-		UserResponseDto dto = new UserResponseDto();
-		dto.setId(updatedUser.getId());
-		dto.setName(updatedUser.getName());
-		dto.setEmail(updatedUser.getEmail());
-		dto.setRole(updatedUser.getRole());
-		dto.setActive(updatedUser.getActive());
-
-		return dto;
+		return userMapper.toDto(updatedUser);
 	}
 	
 	@Override
 	public void deleteUserById(Long id) {
-		UserEntity user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User Not Found With ID : " +id));
+		UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User Not Found With ID : " +id));
 		
 		if(user.isDeleted()) {
-			throw new RuntimeException("User already deleted");
+			throw new IllegalStateException("User already deleted with id" +id);
 		}
-		
 		user.setDeleted(true);
 		user.setActive(false);
-		
 		userRepository.save(user);
 	}
 
 	@Override
-	public List<UserResponseDto> getActiveUsers() {
-		
-		List<UserEntity> users = userRepository.findByDeletedFalseAndActiveTrue();
-		
-		return users.stream().map(user -> {
-			
-			UserResponseDto dto = new UserResponseDto();
-			dto.setId(user.getId());
-			dto.setName(user.getName());
-			dto.setEmail(user.getEmail());
-			dto.setRole(user.getRole());
-			dto.setActive(user.getActive());
-			
-			
-			return dto;
-		}).toList();		
+	public Page<UserResponseDto> getActiveUsers(Pageable pageable) {
+		Page<UserEntity> usersPage = userRepository.findByDeletedFalseAndActiveTrue(pageable);
+		return usersPage.map(userMapper::toDto);
 	}
 
 	@Override
-	public List<UserResponseDto> searchByName(String name) {
-		
-		List<UserEntity> users = userRepository
-				.findByNameContainingIgnoreCase(name);
-		return users.stream().map(user -> {
-		UserResponseDto dto = new UserResponseDto();
-		dto.setId(user.getId());
-		dto.setName(user.getName());
-		dto.setEmail(user.getEmail());
-		dto.setRole(user.getRole());
-		dto.setActive(user.getActive());
-		return dto;
-		
-		}).toList();
+	public Page<UserResponseDto> searchByName(String name, Pageable pageable) {
+		Page<UserEntity> usersPage = userRepository.findByNameContainingIgnoreCase(name, pageable);
+		return usersPage.map(userMapper::toDto);
 	}
 }

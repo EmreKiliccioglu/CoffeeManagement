@@ -31,4 +31,6 @@ public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
             ORDER BY SUM(o.totalPrice) DESC
         """)
         List<TopStoreRevenueProjection> findStoreRevenuesDesc();
+    
+    List<OrderEntity> findByUser_Id(Long userId);
 }

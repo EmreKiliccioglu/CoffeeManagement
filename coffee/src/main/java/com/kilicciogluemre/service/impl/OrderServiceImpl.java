@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kilicciogluemre.Mapper.OrderMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,141 +35,146 @@ import jakarta.transaction.Transactional;
 @Service
 public class OrderServiceImpl implements IOrderService {
 
-    @Autowired
-    private UserRepository userRepository;
+	@Autowired
+	private UserRepository userRepository;
 
-    @Autowired
-    private StoreRepository storeRepository;
+	@Autowired
+	private StoreRepository storeRepository;
 
-    @Autowired
-    private StoreProductRepository storeProductRepository;
+	@Autowired
+	private StoreProductRepository storeProductRepository;
 
-    @Autowired
-    private OrderRepository orderRepository;
+	@Autowired
+	private OrderRepository orderRepository;
 
-    @Autowired
-    private OrderItemRepository orderItemRepository;
+	@Autowired
+	private OrderItemRepository orderItemRepository;
 
-    @Override
-    @Transactional
-    public OrderResponseDto createOrder(OrderRequestDto requestDto) {
+	@Autowired
+	private OrderMapper orderMapper;
 
-        UserEntity user = userRepository.findById(requestDto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+	@Override
+	@Transactional
+	public OrderResponseDto createOrder(OrderRequestDto requestDto) {
 
-        StoreEntity store = storeRepository.findById(requestDto.getStoreId())
-                .orElseThrow(() -> new RuntimeException("Store not found"));
+		UserEntity user = userRepository.findById(requestDto.getUserId())
+				.orElseThrow(() -> new RuntimeException("User not found"));
 
-        OrderEntity order = new OrderEntity();
-        order.setUser(user);
-        order.setStore(store);
-        order.setTotalPrice(BigDecimal.ZERO);
+		StoreEntity store = storeRepository.findById(requestDto.getStoreId())
+				.orElseThrow(() -> new RuntimeException("Store not found"));
 
-        OrderEntity savedOrder = orderRepository.save(order);
+		OrderEntity order = new OrderEntity();
+		order.setUser(user);
+		order.setStore(store);
+		order.setTotalPrice(BigDecimal.ZERO);
 
-        BigDecimal totalPrice = BigDecimal.ZERO;
-        List<OrderItemResponseDto> itemResponses = new ArrayList<>();
+		OrderEntity savedOrder = orderRepository.save(order);
 
-        for (OrderItemRequestDto itemDto : requestDto.getItems()) {
-        
-        	StoreProductEntity storeProduct = storeProductRepository
-                    .findByStore_IdAndProduct_Id(store.getId(), itemDto.getProductId())
-                    .orElseThrow(() -> new RuntimeException(
-                            "Product not found in this store"));
+		BigDecimal totalPrice = BigDecimal.ZERO;
+		List<OrderItemResponseDto> itemResponses = new ArrayList<>();
 
-            if (!storeProduct.getActive()) {
-                throw new RuntimeException("Product is not active in this store");
-            }
+		for (OrderItemRequestDto itemDto : requestDto.getItems()) {
 
-            if (storeProduct.getStock() < itemDto.getQuantity()) {
-                throw new RuntimeException("Insufficient stock");
-            }
+			StoreProductEntity storeProduct = storeProductRepository
+					.findByStore_IdAndProduct_Id(store.getId(), itemDto.getProductId())
+					.orElseThrow(() -> new RuntimeException("Product not found in this store"));
 
-            OrderItemEntity orderItem = new OrderItemEntity();
-            orderItem.setOrder(savedOrder);
-            orderItem.setStoreProduct(storeProduct);
-            orderItem.setQuantity(itemDto.getQuantity());
-            orderItem.setPriceAtOrderTime(storeProduct.getPrice());
+			if (!storeProduct.getActive()) {
+				throw new RuntimeException("Product is not active in this store");
+			}
 
-            OrderItemEntity savedItem = orderItemRepository.save(orderItem);
+			if (storeProduct.getStock() < itemDto.getQuantity()) {
+				throw new RuntimeException("Insufficient stock");
+			}
 
-            BigDecimal itemTotal = storeProduct.getPrice()
-                    .multiply(BigDecimal.valueOf(itemDto.getQuantity()));
-            totalPrice = totalPrice.add(itemTotal);
+			OrderItemEntity orderItem = new OrderItemEntity();
+			orderItem.setOrder(savedOrder);
+			orderItem.setStoreProduct(storeProduct);
+			orderItem.setQuantity(itemDto.getQuantity());
+			orderItem.setPriceAtOrderTime(storeProduct.getPrice());
 
-            storeProduct.setStock(
-                    storeProduct.getStock() - itemDto.getQuantity()
-            );
-            storeProductRepository.save(storeProduct);
+			OrderItemEntity savedItem = orderItemRepository.save(orderItem);
 
-            OrderItemResponseDto itemResponse = new OrderItemResponseDto();
-            itemResponse.setId(savedItem.getId());
-            itemResponse.setQuantity(savedItem.getQuantity());
-            itemResponse.setPriceAtOrderTime(savedItem.getPriceAtOrderTime());
+			BigDecimal itemTotal = storeProduct.getPrice().multiply(BigDecimal.valueOf(itemDto.getQuantity()));
+			totalPrice = totalPrice.add(itemTotal);
 
-            ProductResponseDto productDto = new ProductResponseDto();
-            BeanUtils.copyProperties(storeProduct.getProduct(), productDto);
-            itemResponse.setProduct(productDto);
+			storeProduct.setStock(storeProduct.getStock() - itemDto.getQuantity());
+			storeProductRepository.save(storeProduct);
 
-            itemResponses.add(itemResponse);
-        }
+			OrderItemResponseDto itemResponse = new OrderItemResponseDto();
+			itemResponse.setId(savedItem.getId());
+			itemResponse.setQuantity(savedItem.getQuantity());
+			itemResponse.setPriceAtOrderTime(savedItem.getPriceAtOrderTime());
 
-        savedOrder.setTotalPrice(totalPrice);
-        orderRepository.save(savedOrder);
+			ProductResponseDto productDto = new ProductResponseDto();
+			BeanUtils.copyProperties(storeProduct.getProduct(), productDto);
+			itemResponse.setProduct(productDto);
 
-        OrderResponseDto response = new OrderResponseDto();
-        response.setId(savedOrder.getId());
-        response.setTotalPrice(totalPrice);
-        response.setItems(itemResponses);
+			itemResponses.add(itemResponse);
+		}
 
-        UserResponseDto userDto = new UserResponseDto();
-        BeanUtils.copyProperties(user, userDto);
-        response.setUser(userDto);
+		savedOrder.setTotalPrice(totalPrice);
+		orderRepository.save(savedOrder);
 
-        StoreResponseDto storeDto = new StoreResponseDto();
-        BeanUtils.copyProperties(store, storeDto);
-        response.setStore(storeDto);
+		OrderResponseDto response = new OrderResponseDto();
+		response.setId(savedOrder.getId());
+		response.setTotalPrice(totalPrice);
+		response.setItems(itemResponses);
 
-        return response;
-    }
+		UserResponseDto userDto = new UserResponseDto();
+		BeanUtils.copyProperties(user, userDto);
+		response.setUser(userDto);
+
+		StoreResponseDto storeDto = new StoreResponseDto();
+		BeanUtils.copyProperties(store, storeDto);
+		response.setStore(storeDto);
+
+		return response;
+	}
 
 	@Override
 	public BigDecimal getTotalRevenue() {
-		
+
 		return orderRepository.getTotalRevenue();
 	}
 
 	@Override
 	public BigDecimal getTotalRevenueByStore(Long storeId) {
-		
+
 		storeRepository.findById(storeId).orElseThrow(() -> new RuntimeException("Store Not Found"));
 		return orderRepository.getTotalRevenueByStoreId(storeId);
 	}
 
 	@Override
 	public TopStoreRevenueResponseDto getTopRevenueStore() {
-		
-		List<TopStoreRevenueProjection> result =
-                orderRepository.findStoreRevenuesDesc();
 
-        if (result.isEmpty()) {
-            throw new RuntimeException("No orders found");
-        }
+		List<TopStoreRevenueProjection> result = orderRepository.findStoreRevenuesDesc();
 
-        TopStoreRevenueProjection top = result.get(0);
+		if (result.isEmpty()) {
+			throw new RuntimeException("No orders found");
+		}
 
-        StoreEntity store = storeRepository.findById(top.getStoreId())
-                .orElseThrow(() -> new RuntimeException("Store not found"));
+		TopStoreRevenueProjection top = result.get(0);
 
-        TopStoreRevenueResponseDto response = new TopStoreRevenueResponseDto();
-        response.setStoreId(store.getId());
-        response.setStoreName(store.getName());
-        response.setStoreAddress(store.getAddress());
-        response.setTotalRevenue(top.getTotalRevenue());
+		StoreEntity store = storeRepository.findById(top.getStoreId())
+				.orElseThrow(() -> new RuntimeException("Store not found"));
 
-        return response;
-    }
+		TopStoreRevenueResponseDto response = new TopStoreRevenueResponseDto();
+		response.setStoreId(store.getId());
+		response.setStoreName(store.getName());
+		response.setStoreAddress(store.getAddress());
+		response.setTotalRevenue(top.getTotalRevenue());
+
+		return response;
+	}
+
+	@Override
+	public List<OrderResponseDto> getOrdersByUserId(Long userId) {
+
+		List<OrderEntity> orders = orderRepository.findByUser_Id(userId);
+
+		return orders.stream()
+				.map(orderMapper::toDto)
+				.toList();
+	}
 }
-	
-	
-

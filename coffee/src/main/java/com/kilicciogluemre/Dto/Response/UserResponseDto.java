@@ -1,7 +1,9 @@
 package com.kilicciogluemre.Dto.Response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.kilicciogluemre.entity.Role;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserResponseDto {
 
     private Long id;

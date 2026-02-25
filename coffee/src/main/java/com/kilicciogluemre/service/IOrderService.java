@@ -1,6 +1,7 @@
 package com.kilicciogluemre.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import com.kilicciogluemre.Dto.Request.OrderRequestDto;
 import com.kilicciogluemre.Dto.Response.OrderResponseDto;
@@ -15,4 +16,6 @@ public interface IOrderService {
 	BigDecimal getTotalRevenueByStore(Long storeId);
 	
 	TopStoreRevenueResponseDto getTopRevenueStore();
+	
+	List<OrderResponseDto> getOrdersByUserId(Long userId);
 }

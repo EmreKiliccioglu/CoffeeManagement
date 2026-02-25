@@ -1,6 +1,7 @@
 package com.kilicciogluemre.controller;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,5 +50,10 @@ public class OrderController {
 	@GetMapping("/top-revenue")
 	public TopStoreRevenueResponseDto getTopRevenueStore() {
 		return orderService.getTopRevenueStore();
+	}
+	
+	@GetMapping("/user/{userId}")
+	public ResponseEntity<List<OrderResponseDto>> getOrdersByUser(@PathVariable Long userId) {
+	    return ResponseEntity.ok(orderService.getOrdersByUserId(userId));
 	}
 }

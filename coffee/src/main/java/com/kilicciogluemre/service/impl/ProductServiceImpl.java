@@ -2,6 +2,7 @@ package com.kilicciogluemre.service.impl;
 
 import java.util.List;
 
+import com.kilicciogluemre.Mapper.ProductMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ import com.kilicciogluemre.service.IProductService;
 import jakarta.transaction.Transactional;
 
 @Service
-public class ProductService implements IProductService {
+public class ProductServiceImpl implements IProductService {
 
     @Autowired
     private ProductRepository productRepository;
@@ -24,29 +25,20 @@ public class ProductService implements IProductService {
     @Autowired
     private StoreProductRepository storeProductRepository;
 
+    @Autowired
+    private ProductMapper productMapper;
+
     @Transactional
     public ProductResponseDto createProduct(ProductRequestDto dto) {
-
-        ProductEntity product = new ProductEntity();
-        product.setName(dto.getName());
-        product.setActive(true);
-        product.setDeleted(false);
-
+        ProductEntity product = productMapper.toEntity(dto);
         ProductEntity saved = productRepository.save(product);
-
-        ProductResponseDto response = new ProductResponseDto();
-        BeanUtils.copyProperties(saved, response);
-        return response;
+        return productMapper.toDto(saved);
     }
 
     public List<ProductResponseDto> getAllProducts() {
         return productRepository.findAll()
             .stream()
-            .map(p -> {
-                ProductResponseDto dto = new ProductResponseDto();
-                BeanUtils.copyProperties(p, dto);
-                return dto;
-            })
+            .map(productMapper::toDto)
             .toList();
     }
 
@@ -62,20 +54,16 @@ public class ProductService implements IProductService {
 		
 		ProductEntity product = productRepository.findById(id)
 				.orElseThrow(() -> new RuntimeException("Product Not Found With ID :" +id));
-		
-		ProductResponseDto responseDto = new ProductResponseDto();
-		BeanUtils.copyProperties(product, responseDto);
-		return responseDto;
+        return productMapper.toDto(product);
 	}
 
 	@Override
 	public List<ProductResponseDto> getProductsByName(String name) {
 		
-		return productRepository.findByNameContainingIgnoreCase(name).stream().map(p -> {
-			ProductResponseDto responseDto = new ProductResponseDto();
-			BeanUtils.copyProperties(p, responseDto);
-			return responseDto;
-		}).toList();
+		return productRepository.findByNameContainingIgnoreCase(name)
+                .stream()
+                .map(productMapper::toDto)
+                .toList();
 	}
 }
 

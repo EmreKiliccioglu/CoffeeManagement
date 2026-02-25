@@ -3,6 +3,8 @@ package com.kilicciogluemre.controller;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -18,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.kilicciogluemre.Dto.Request.UserRequestDto;
 import com.kilicciogluemre.Dto.Response.UserResponseDto;
 import com.kilicciogluemre.service.IUserService;
-
+// Pageable için page ve size parametreleri ile request atılmalı
 @RestController
 @RequestMapping("/rest/api/users")
 public class UserController {
@@ -32,10 +34,9 @@ public class UserController {
 		return new ResponseEntity<>(response, HttpStatus.CREATED);
 	}
 
-	@GetMapping("/list")
-	public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-		List<UserResponseDto> users = userService.getAllUsers();
-		return ResponseEntity.ok(users);
+	@GetMapping
+	public ResponseEntity<Page<UserResponseDto>> getAllUsers(Pageable pageable) {
+		return ResponseEntity.ok(userService.getAllUsers(pageable));
 	}
 
 	@GetMapping("/list/{id}")
@@ -58,17 +59,17 @@ public class UserController {
 		userService.deleteUserById(id);
 		return ResponseEntity.noContent().build();
 	}
-	
-	@GetMapping("/list/active")
-	public ResponseEntity<List<UserResponseDto>> getActiveUsers(){
-		List<UserResponseDto> users = userService.getActiveUsers();
-		return ResponseEntity.ok(users);
+
+	@GetMapping("/active")
+	public ResponseEntity<Page<UserResponseDto>> getActiveUsers(Pageable pageable) {
+		return ResponseEntity.ok(userService.getActiveUsers(pageable));
 	}
-	
+
 	@GetMapping("/search")
-	public ResponseEntity<List<UserResponseDto>> searchUsersByName(@RequestParam String name){
-		List<UserResponseDto> users = userService.searchByName(name);
-		return ResponseEntity.ok(users);
+	public ResponseEntity<Page<UserResponseDto>> searchUsersByName(
+			@RequestParam String name,
+			Pageable pageable) {
+
+		return ResponseEntity.ok(userService.searchByName(name, pageable));
 	}
-	
 }

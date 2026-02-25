@@ -4,12 +4,14 @@ import java.util.List;
 
 import com.kilicciogluemre.Dto.Request.UserRequestDto;
 import com.kilicciogluemre.Dto.Response.UserResponseDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface IUserService {
 
 	UserResponseDto createUser(UserRequestDto userRequestDto);
 	
-	List<UserResponseDto> getAllUsers();
+	Page<UserResponseDto> getAllUsers(Pageable pageable);
 	
 	UserResponseDto getUserById(Long id);
 	
@@ -17,8 +19,7 @@ public interface IUserService {
 	
 	void deleteUserById(Long id);
 	
-	List<UserResponseDto> getActiveUsers();
+	Page<UserResponseDto> getActiveUsers(Pageable pageable);
 	
-	List<UserResponseDto> searchByName(String name);
-
+	Page<UserResponseDto> searchByName(String name, Pageable pageable);
 }
