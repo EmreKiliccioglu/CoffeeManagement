@@ -24,7 +24,4 @@ CoffeeManagement, bir kahve mağazası zinciri için sipariş, ürün ve mağaza
 - Spring Data JPA (Hibernate)
 - Maven
 - H2 veya MySQL veritabanı
-- DTO & Mapper Pattern
-- Authentication (JWT)
-- Global Exception Handler
 - Postman (API testleri için)
