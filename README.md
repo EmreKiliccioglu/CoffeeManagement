@@ -22,6 +22,8 @@ CoffeeManagement, bir kahve mağazası zinciri için sipariş, ürün ve mağaza
 - Java 17
 - Spring Boot 3.x
 - Spring Data JPA (Hibernate)
+- Docker
+- Redis
 - Maven
 - H2 veya MySQL veritabanı
 - Postman (API testleri için)
