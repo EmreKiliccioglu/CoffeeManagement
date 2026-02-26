@@ -10,6 +10,6 @@ import com.kilicciogluemre.entity.OrderItemEntity;
 @Repository
 public interface OrderItemRepository extends JpaRepository<OrderItemEntity, Long> {
 	
-	List<OrderItemEntity> findByOrder_Id(Long orderId);
+	//List<OrderItemEntity> findByOrder_Id(Long orderId);
 
 }

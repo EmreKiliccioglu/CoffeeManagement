@@ -4,19 +4,15 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.kilicciogluemre.GlobalException.Exceptions;
 import com.kilicciogluemre.Mapper.OrderMapper;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.kilicciogluemre.Dto.Request.OrderItemRequestDto;
 import com.kilicciogluemre.Dto.Request.OrderRequestDto;
-import com.kilicciogluemre.Dto.Response.OrderItemResponseDto;
 import com.kilicciogluemre.Dto.Response.OrderResponseDto;
-import com.kilicciogluemre.Dto.Response.ProductResponseDto;
-import com.kilicciogluemre.Dto.Response.StoreResponseDto;
 import com.kilicciogluemre.Dto.Response.TopStoreRevenueResponseDto;
-import com.kilicciogluemre.Dto.Response.UserResponseDto;
 import com.kilicciogluemre.entity.OrderEntity;
 import com.kilicciogluemre.entity.OrderItemEntity;
 import com.kilicciogluemre.entity.StoreEntity;
@@ -35,101 +31,81 @@ import jakarta.transaction.Transactional;
 @Service
 public class OrderServiceImpl implements IOrderService {
 
-	@Autowired
-	private UserRepository userRepository;
+	private final UserRepository userRepository;
+	private final StoreRepository storeRepository;
+	private final StoreProductRepository storeProductRepository;
+	private final OrderRepository orderRepository;
+	private final OrderItemRepository orderItemRepository;
+	private final OrderMapper orderMapper;
 
-	@Autowired
-	private StoreRepository storeRepository;
+	public OrderServiceImpl(UserRepository userRepository,
+							StoreRepository storeRepository,
+							StoreProductRepository storeProductRepository,
+							OrderRepository orderRepository,
+							OrderItemRepository orderItemRepository,
+							OrderMapper orderMapper) {
 
-	@Autowired
-	private StoreProductRepository storeProductRepository;
-
-	@Autowired
-	private OrderRepository orderRepository;
-
-	@Autowired
-	private OrderItemRepository orderItemRepository;
-
-	@Autowired
-	private OrderMapper orderMapper;
+		this.userRepository = userRepository;
+		this.storeRepository = storeRepository;
+		this.storeProductRepository = storeProductRepository;
+		this.orderRepository = orderRepository;
+		this.orderItemRepository = orderItemRepository;
+		this.orderMapper = orderMapper;
+	}
 
 	@Override
 	@Transactional
 	public OrderResponseDto createOrder(OrderRequestDto requestDto) {
 
 		UserEntity user = userRepository.findById(requestDto.getUserId())
-				.orElseThrow(() -> new RuntimeException("User not found"));
+				.orElseThrow(() -> new Exceptions.ResourceNotFoundException("User not found"));
 
 		StoreEntity store = storeRepository.findById(requestDto.getStoreId())
-				.orElseThrow(() -> new RuntimeException("Store not found"));
+				.orElseThrow(() -> new Exceptions.ResourceNotFoundException("Store not found"));
 
 		OrderEntity order = new OrderEntity();
 		order.setUser(user);
 		order.setStore(store);
-		order.setTotalPrice(BigDecimal.ZERO);
-
-		OrderEntity savedOrder = orderRepository.save(order);
 
 		BigDecimal totalPrice = BigDecimal.ZERO;
-		List<OrderItemResponseDto> itemResponses = new ArrayList<>();
+		List<OrderItemEntity> orderItems = new ArrayList<>();
 
 		for (OrderItemRequestDto itemDto : requestDto.getItems()) {
 
 			StoreProductEntity storeProduct = storeProductRepository
 					.findByStore_IdAndProduct_Id(store.getId(), itemDto.getProductId())
-					.orElseThrow(() -> new RuntimeException("Product not found in this store"));
+					.orElseThrow(() -> new RuntimeException("Product not found"));
 
-			if (!storeProduct.getActive()) {
-				throw new RuntimeException("Product is not active in this store");
-			}
+			if (!storeProduct.getActive())
+				throw new Exceptions.InactiveProductException("Product inactive");
 
-			if (storeProduct.getStock() < itemDto.getQuantity()) {
+			if (storeProduct.getStock() < itemDto.getQuantity())
 				throw new RuntimeException("Insufficient stock");
-			}
 
-			OrderItemEntity orderItem = new OrderItemEntity();
-			orderItem.setOrder(savedOrder);
-			orderItem.setStoreProduct(storeProduct);
-			orderItem.setQuantity(itemDto.getQuantity());
-			orderItem.setPriceAtOrderTime(storeProduct.getPrice());
+			OrderItemEntity item = new OrderItemEntity();
+			item.setOrder(order);
+			item.setStoreProduct(storeProduct);
+			item.setQuantity(itemDto.getQuantity());
+			item.setPriceAtOrderTime(storeProduct.getPrice());
 
-			OrderItemEntity savedItem = orderItemRepository.save(orderItem);
+			orderItems.add(item);
 
-			BigDecimal itemTotal = storeProduct.getPrice().multiply(BigDecimal.valueOf(itemDto.getQuantity()));
-			totalPrice = totalPrice.add(itemTotal);
+			totalPrice = totalPrice.add(
+					storeProduct.getPrice()
+							.multiply(BigDecimal.valueOf(itemDto.getQuantity()))
+			);
 
-			storeProduct.setStock(storeProduct.getStock() - itemDto.getQuantity());
-			storeProductRepository.save(storeProduct);
-
-			OrderItemResponseDto itemResponse = new OrderItemResponseDto();
-			itemResponse.setId(savedItem.getId());
-			itemResponse.setQuantity(savedItem.getQuantity());
-			itemResponse.setPriceAtOrderTime(savedItem.getPriceAtOrderTime());
-
-			ProductResponseDto productDto = new ProductResponseDto();
-			BeanUtils.copyProperties(storeProduct.getProduct(), productDto);
-			itemResponse.setProduct(productDto);
-
-			itemResponses.add(itemResponse);
+			storeProduct.setStock(
+					storeProduct.getStock() - itemDto.getQuantity()
+			);
 		}
 
-		savedOrder.setTotalPrice(totalPrice);
-		orderRepository.save(savedOrder);
+		order.setItems(orderItems);
+		order.setTotalPrice(totalPrice);
 
-		OrderResponseDto response = new OrderResponseDto();
-		response.setId(savedOrder.getId());
-		response.setTotalPrice(totalPrice);
-		response.setItems(itemResponses);
+		order = orderRepository.save(order);
 
-		UserResponseDto userDto = new UserResponseDto();
-		BeanUtils.copyProperties(user, userDto);
-		response.setUser(userDto);
-
-		StoreResponseDto storeDto = new StoreResponseDto();
-		BeanUtils.copyProperties(store, storeDto);
-		response.setStore(storeDto);
-
-		return response;
+		return orderMapper.toDto(order);
 	}
 
 	@Override

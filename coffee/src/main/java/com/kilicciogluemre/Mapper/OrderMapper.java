@@ -4,21 +4,24 @@ import com.kilicciogluemre.Dto.Response.OrderItemResponseDto;
 import com.kilicciogluemre.Dto.Response.OrderResponseDto;
 import com.kilicciogluemre.entity.OrderEntity;
 import com.kilicciogluemre.entity.OrderItemEntity;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Component
 public class OrderMapper {
-    @Autowired
-    private UserMapper userMapper;
 
-    @Autowired
-    private StoreMapper storeMapper;
+    private final UserMapper userMapper;
+    private final StoreMapper storeMapper;
+    private final ProductMapper productMapper;
 
-    @Autowired
-    private ProductMapper productMapper;
+    public OrderMapper(UserMapper userMapper,
+                       StoreMapper storeMapper,
+                       ProductMapper productMapper) {
+        this.userMapper = userMapper;
+        this.storeMapper = storeMapper;
+        this.productMapper = productMapper;
+    }
 
     public OrderResponseDto toDto(OrderEntity order) {
         OrderResponseDto dto = new OrderResponseDto();
@@ -27,9 +30,13 @@ public class OrderMapper {
         dto.setUser(userMapper.toDto(order.getUser()));
         dto.setStore(storeMapper.toResponse(order.getStore()));
 
-        dto.setItems(order.getItems().stream()
-                .map(this::orderItemToDto)
-                .collect(Collectors.toList()));
+        dto.setItems(
+                order.getItems() == null
+                        ? List.of()
+                        : order.getItems().stream()
+                        .map(this::orderItemToDto)
+                        .toList()
+        );
 
         return dto;
     }

@@ -3,8 +3,6 @@ package com.kilicciogluemre.service.impl;
 import java.util.List;
 
 import com.kilicciogluemre.Mapper.ProductMapper;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.kilicciogluemre.Dto.Request.ProductRequestDto;
@@ -19,15 +17,17 @@ import jakarta.transaction.Transactional;
 @Service
 public class ProductServiceImpl implements IProductService {
 
-    @Autowired
-    private ProductRepository productRepository;
-    
-    @Autowired
-    private StoreProductRepository storeProductRepository;
+    private final ProductRepository productRepository;
+    private final StoreProductRepository storeProductRepository;
+    private final ProductMapper productMapper;
 
-    @Autowired
-    private ProductMapper productMapper;
-
+    public ProductServiceImpl(ProductRepository productRepository,
+                              StoreProductRepository storeProductRepository,
+                              ProductMapper productMapper) {
+        this.productRepository = productRepository;
+        this.storeProductRepository = storeProductRepository;
+        this.productMapper = productMapper;
+    }
     @Transactional
     public ProductResponseDto createProduct(ProductRequestDto dto) {
         ProductEntity product = productMapper.toEntity(dto);

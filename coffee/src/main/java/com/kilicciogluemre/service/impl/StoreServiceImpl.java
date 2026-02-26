@@ -1,12 +1,9 @@
 package com.kilicciogluemre.service.impl;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-import com.kilicciogluemre.GlobalException.ResourceNotFoundException;
+import com.kilicciogluemre.GlobalException.Exceptions;
 import com.kilicciogluemre.Mapper.StoreMapper;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.kilicciogluemre.Dto.Request.StoreRequestDto;
@@ -49,7 +46,7 @@ public class StoreServiceImpl implements IStoreService {
 	public StoreResponseDto getStoreById(Long id) {
 
 		StoreEntity store = storeRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Store Not Found With ID :" +id));
+				.orElseThrow(() -> new Exceptions.ResourceNotFoundException("Store Not Found With ID :" +id));
 
 		return  storeMapper.toResponse(store);
 	}
@@ -57,7 +54,7 @@ public class StoreServiceImpl implements IStoreService {
 	@Override
 	public StoreResponseDto updateStore(Long id, StoreRequestDto storeRequestDto) {
 		StoreEntity store = storeRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("Store Not Found With ID :" +id));
+				.orElseThrow(() -> new Exceptions.ResourceNotFoundException("Store Not Found With ID :" +id));
 		
 		if(storeRequestDto.getName() != null) {
 			store.setName(storeRequestDto.getName());

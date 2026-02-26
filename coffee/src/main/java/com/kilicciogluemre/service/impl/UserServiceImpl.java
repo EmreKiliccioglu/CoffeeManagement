@@ -1,12 +1,8 @@
 package com.kilicciogluemre.service.impl;
 
-import java.util.List;
-import java.util.stream.Collectors;
 
-import com.kilicciogluemre.GlobalException.GlobalExceptionHandler;
-import com.kilicciogluemre.GlobalException.ResourceNotFoundException;
+import com.kilicciogluemre.GlobalException.Exceptions;
 import com.kilicciogluemre.Mapper.UserMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,15 +18,17 @@ import com.kilicciogluemre.service.IUserService;
 @Service
 public class UserServiceImpl implements IUserService {
 
-	@Autowired
-	private UserRepository userRepository;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final UserMapper userMapper;
 
-	@Autowired
-	private PasswordEncoder passwordEncoder;
-
-	@Autowired
-	private UserMapper userMapper;
-
+	public UserServiceImpl(UserRepository userRepository,
+						   PasswordEncoder passwordEncoder,
+						   UserMapper userMapper) {
+		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.userMapper = userMapper;
+	}
 	@Override
 	public UserResponseDto createUser(UserRequestDto userRequestDto) {
 		UserEntity user = userMapper.toEntity(userRequestDto);
@@ -58,7 +56,7 @@ public class UserServiceImpl implements IUserService {
 	@Override
 	public UserResponseDto getUserById(Long id) {
 		UserEntity user = userRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("User Not Found With ID : " + id));
+				.orElseThrow(() -> new Exceptions.ResourceNotFoundException("User Not Found With ID : " + id));
 
 		return userMapper.toDto(user);
 	}
@@ -66,7 +64,7 @@ public class UserServiceImpl implements IUserService {
 	@Override
 	public UserResponseDto updateUser(Long id, UserRequestDto userRequestDto) {
 		UserEntity user = userRepository.findById(id)
-				.orElseThrow(() -> new ResourceNotFoundException("User Not Found With ID :" + id));
+				.orElseThrow(() -> new Exceptions.ResourceNotFoundException("User Not Found With ID :" + id));
 
 		userMapper.updateEntityFromDto(userRequestDto, user);
 
@@ -77,7 +75,7 @@ public class UserServiceImpl implements IUserService {
 	
 	@Override
 	public void deleteUserById(Long id) {
-		UserEntity user = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User Not Found With ID : " +id));
+		UserEntity user = userRepository.findById(id).orElseThrow(() -> new Exceptions.ResourceNotFoundException("User Not Found With ID : " +id));
 		
 		if(user.isDeleted()) {
 			throw new IllegalStateException("User already deleted with id" +id);

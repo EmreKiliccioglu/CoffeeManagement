@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler(Exceptions.ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(
-            ResourceNotFoundException exception,
+            Exceptions.ResourceNotFoundException exception,
             HttpServletRequest request) {
+
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 "Not Found",
@@ -28,15 +28,40 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidation(
             MethodArgumentNotValidException exception,
             HttpServletRequest request) {
-        String message = exception.getBindingResult().getFieldError().getDefaultMessage();
+
+        String message = "Validation failed";
+
+        if (exception.getBindingResult().getFieldError() != null) {
+            message = exception.getBindingResult().getFieldError().getDefaultMessage();
+        }
+
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Validation Error",
                 message,
                 request.getRequestURI()
         );
+
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler({Exceptions.InsufficientStockException.class,
+            Exceptions.InactiveProductException.class,
+            Exceptions.NoOrdersFoundException.class,
+            Exceptions.InvalidDataException.class})
+    public ResponseEntity<ErrorResponse> handleBusinessException(
+            RuntimeException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Business Rule Violation",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(
             Exception exception,
@@ -65,3 +90,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 }
+
+
+
